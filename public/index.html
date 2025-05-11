@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Upload & Stream</title>
+</head>
+
+<body>
+    <h1>Upload Video</h1>
+    <form id="uploadForm" enctype="multipart/form-data">
+        <input type="file" id="videoFile" name="video">
+        <button type="button" onclick="uploadVideo()">Upload</button>
+    </form>
+
+    <h1>Stream Video</h1>
+    <button id="frameStreamButton" onclick="toggleFrameStream()">Start Frame Streaming</button>
+    <button id="chunkStreamButton" onclick="toggleChunkStream()">Start Chunk Streaming</button>
+    <button id="base64StreamButton" onclick="toggleBase64Stream()">Start Base64 Streaming</button>
+    <img id="base64Image" height="200px" width="auto" />
+
+    <script>
+        let ws;
+        async function uploadVideo() {
+            const fileInput = document.getElementById("videoFile");
+            if (!fileInput.files.length) {
+                alert("Please select a file to upload.");
+                return;
+            }
+
+            const fileName = encodeURIComponent(fileInput.files[0].name);
+
+            // Simulate uploading via query parameters
+            const response = await fetch(`/stream/upload?filename=${fileName}`);
+            const result = await response.json();
+            alert(result.message || "Upload successful!");
+        }
+
+        async function toggleFrameStream() {
+            const frameStreamButton = document.getElementById("frameStreamButton");
+            const isActive = await checkStreamStatus("/stream/status/frame");
+
+            if (isActive) {
+                await fetch("/stream/stop/frame");
+                frameStreamButton.textContent = "Start Frame Streaming";
+            } else {
+                await fetch("/stream/start/frame");
+                frameStreamButton.textContent = "Stop Frame Streaming";
+            }
+        }
+
+        async function toggleChunkStream() {
+            const chunkStreamButton = document.getElementById("chunkStreamButton");
+            const isActive = await checkStreamStatus("/stream/status/chunk");
+
+            if (isActive) {
+                await fetch("/stream/stop/chunk");
+                chunkStreamButton.textContent = "Start Chunk Streaming";
+            } else {
+                await fetch("/stream/start/chunk");
+                chunkStreamButton.textContent = "Stop Chunk Streaming";
+            }
+        }
+
+        async function toggleBase64Stream() {
+            const base64StreamButton = document.getElementById("base64StreamButton");
+            const isActive = await checkStreamStatus("/stream/status/base");
+
+            if (ws) {
+                ws.close();
+                ws = null;
+                await fetch("/stream/stop/base");
+                base64StreamButton.textContent = "Start Base64 Streaming";
+            } else {
+                ws = new WebSocket("ws://localhost:8080"); // Adjust to your server's WebSocket URL
+                await fetch("/stream/start/base");
+                ws.onmessage = (event) => {
+                    const base64Image = event.data;
+                    displayBase64Image(base64Image);
+                };
+
+                ws.onclose = () => {
+                    console.log("WebSocket closed");
+                };
+
+                base64StreamButton.textContent = "Stop Base64 Streaming";
+            }
+
+            // if (isActive) {
+            //     await fetch("/stream/stop/base");
+            //     base64StreamButton.textContent = "Start Base64 Streaming";
+            // } else {
+            //     await fetch("/stream/start/base");
+            //     base64StreamButton.textContent = "Stop Base64 Streaming";
+            // }
+        }
+
+        async function checkStreamStatus(url) {
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                return data.status;
+            } catch (error) {
+                console.error("Error checking stream status:", error);
+                return false;
+            }
+        }
+        // function displayBase64Image(base64Image) {
+        //     const imgElement = document.getElementById("base64Image");
+        //     if (imgElement) {
+        //         imgElement.src = `data:image/jpeg;base64,${base64Image}`;
+        //     } else {
+        //         console.error("Image element with id 'base64Image' not found.");
+        //     }
+        // }
+        function displayBase64Image(base64Image) {
+            const img = document.createElement("img");
+            img.src = `data:image/jpeg;base64,${base64Image}`;
+            document.body.appendChild(img); // Add image to the document
+        }
+    </script>
+</body>
+
+</html>
