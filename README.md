@@ -90,7 +90,7 @@ Start the server.
 - Processed files will be saved in the public/outputs directory.
 
 ## 📝 License
-This project is licensed under the MIT License.
+This project is licensed under the [MIT](https://choosealicense.com/licenses/mit/) License.
 
 ## 🤝 Contributing
 Contributions are welcome! Please fork the repository and submit a pull request for any enhancements or bug fixes.
